@@ -1,0 +1,134 @@
+const { v4: uuidv4 } = require('uuid');
+const db = require('../db/db_config');
+const Freets = require('./Freets');
+const NA_FREET = -1;
+
+const relationType = {
+      "follow": 1,
+      "upvote": 2,
+      "refreet": 3
+    };
+
+class Relations {
+  static async followUser(currUser, ogUser) {
+    return db.run(`INSERT INTO relations
+    VALUES ('${relationType.follow}',
+            '${currUser}',
+            '${NA_FREET}',
+            '${ogUser}',
+            '${NA_FREET}')`)
+  };
+
+  static async getFollowers(user) {
+    return db.all(`
+      SELECT * FROM relations
+      WHERE ${db.relationsTable.relationType} = ${relationType.follow}
+      AND ${db.relationsTable.ogUser} = '${user}'`)
+  };
+
+  static async getFollowing(user) {
+    return db.all(`
+      SELECT * FROM relations
+      WHERE ${db.relationsTable.relationType} = ${relationType.follow}
+      AND ${db.relationsTable.currUser} = '${user}'`)
+  };
+
+  static async unfollowUser(currUser, ogUser) {
+    return db.run(`
+      DELETE FROM relations
+      WHERE ${db.relationsTable.relationType} = '${relationType.follow}'
+      AND ${db.relationsTable.ogUser} = '${ogUser}'
+      AND ${db.relationsTable.currUser} = '${currUser}'`)
+  };
+
+  static async following(currUser, ogUser) {
+    return db.get(`
+      SELECT * FROM relations
+      WHERE ${db.relationsTable.relationType} = '${relationType.follow}'
+      AND ${db.relationsTable.ogUser} = '${ogUser}'
+      AND ${db.relationsTable.currUser} = '${currUser}'`);
+  };
+
+
+  static async upvoteFreet(currUser, ogUser, ogFreetID) {
+    return db.run(`
+    INSERT INTO relations
+      VALUES ('${relationType.upvote}',
+              '${currUser}',
+              '${NA_FREET}',
+              '${ogUser}',
+              '${ogFreetID}' )
+      `).then( () => { return db.run(`
+        UPDATE freets
+        SET ${db.freetsTable.upvotes} = ${db.freetsTable.upvotes} + 1
+        WHERE ${db.freetsTable.freetID} = '${ogFreetID}';
+        `);
+      })
+    };
+
+  static async removeUpvoteFreet(currUser, ogUser, ogFreetID) {
+    return db.run(`
+      UPDATE freets
+      SET ${db.freetsTable.upvotes} = ${db.freetsTable.upvotes} - 1
+      WHERE ${db.freetsTable.freetID} = '${ogFreetID}'`).then( () => {return db.run(`
+        DELETE FROM relations
+        WHERE ${db.relationsTable.relationType} = '${relationType.upvote}'
+        AND ${db.relationsTable.ogUser} = '${ogUser}'
+        AND ${db.relationsTable.currUser} = '${currUser}'
+        AND ${db.relationsTable.ogFreet} = '${ogFreetID}'`)
+      }) 
+  };
+
+  static async alreadyUpvoted(currUser, ogUser, ogFreetID) {
+    return db.get(`
+      SELECT * FROM relations
+      WHERE ${db.relationsTable.relationType} = '${relationType.upvote}'
+      AND ${db.relationsTable.ogUser} = '${ogUser}'
+      AND ${db.relationsTable.currUser} = '${currUser}'
+      AND ${db.relationsTable.ogFreet} = '${ogFreetID}'`);
+  };
+
+  static async makeRefreetContent(ogFreetID) {
+    let content = await Freets.getFreetContent(ogFreetID);
+    let ogAuthor = await Freets.getAuthor(ogFreetID)
+    let newFreet = {
+      id: ogFreetID,
+      originalAuthor: ogAuthor.freetAuthor,
+      content: content.freetContent
+    };
+    return JSON.stringify(newFreet);
+  };
+
+  static async refreet(currUser, ogUser, ogFreetID) {
+    let newContent = await Relations.makeRefreetContent(ogFreetID);
+    let newID = uuidv4();
+    return db.run(
+    `INSERT INTO relations
+      VALUES ('${relationType.refreet}',
+        '${currUser}',
+        '${newID}',
+        '${ogUser}',
+        '${ogFreetID}' )`)
+      .then(() => {
+        return Freets.createFreetWithID(newID, currUser, newContent);
+      });
+  };
+
+  static async checkRefreet(id) {
+    return db.get(
+      `SELECT * FROM relations
+      WHERE ${db.relationsTable.relationType} = ${relationType.refreet}
+      AND ${db.relationsTable.currFreet} = '${id}'`)
+  };
+
+  static async checkAlreadyRefreeted(user, id) {
+    return db.get(
+      `SELECT * FROM relations
+      WHERE ${db.relationsTable.relationType} = ${relationType.refreet}
+      AND ${db.relationsTable.ogFreet} = '${id}'
+      AND ${db.relationsTable.currUser} = '${user}'`
+    )
+  }
+}
+
+module.exports = Relations;
