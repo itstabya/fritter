@@ -1,4 +1,7 @@
 const db = require('../db/db_config');
+const bcrypt = require('bcrypt');
+
+const SALT_ROUNDS = 12;
 
   class Users {
     /**
@@ -8,9 +11,10 @@ const db = require('../db/db_config');
      */
 
     static async createUser(username, password) {
+      const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
       return db.run(`
         INSERT INTO users 
-        VALUES ('${username}', '${password}')`)
+        VALUES ('${username}', '${hashedPassword}')`)
       .then(() => {
         return Users.findUser(username);
       });
@@ -29,15 +33,34 @@ const db = require('../db/db_config');
     }
 
     /**
-     * Checks password for user username log-in.
+     * Checks password for user username log-in and migrates plaintext passwords.
      * @param {String} username 
-     * @param {String} pw
-     * @returns {Boolean}
+     * @param {String} password
+     * @returns {Object} with success boolean and user data
      */
-    static async authenticate(username, pw) {
-      return db.get(`
+    static async authenticate(username, password) {
+      const user = await db.get(`
         SELECT ${db.usersTable.pw} 
         FROM users WHERE ${db.usersTable.username} = '${username}'`);
+      
+      if (!user) return { success: false };
+      
+      const storedPassword = user.password;
+      
+      if (storedPassword.startsWith('$2b$')) {
+        const isValid = await bcrypt.compare(password, storedPassword);
+        return { success: isValid, user };
+      } else {
+        if (password === storedPassword) {
+          const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+          await db.run(`
+            UPDATE users 
+            SET ${db.usersTable.pw} = '${hashedPassword}' 
+            WHERE ${db.usersTable.username} = '${username}'`);
+          return { success: true, user };
+        }
+        return { success: false };
+      }
     };
 
     /**
@@ -86,14 +109,15 @@ const db = require('../db/db_config');
         
     }
     /**
-     * Update an existing user's password
+     * Update an existing user's password with hashing
      * @param {String} username
      * @param {String} newPassword
      */
     static async updatePassword(username, newPassword) {
+      const hashedPassword = await bcrypt.hash(newPassword, SALT_ROUNDS);
       return db.run(`
         UPDATE users
-        SET ${db.usersTable.pw} = '${newPassword}'
+        SET ${db.usersTable.pw} = '${hashedPassword}'
         WHERE ${db.usersTable.username} = '${username}'`);
     }
   }
