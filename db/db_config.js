@@ -98,6 +98,42 @@ function all(sqlQuery) {
   });
 };
 
+function runWithParams(sqlQuery, params = []) {
+  return new Promise((resolve, reject) => {
+    sqlDb.run(sqlQuery, params, (err) => {
+      if (err !== null) {
+        reject(err);
+      } else {
+        resolve();
+      }
+    })
+  });
+};
+
+function getWithParams(sqlQuery, params = []) {
+  return new Promise((resolve, reject) => {
+    sqlDb.get(sqlQuery, params, (err, row) => {
+      if (err !== null) {
+        reject(err);
+      } else {
+        resolve(row);
+      }
+    })
+  });
+};
+
+function allWithParams(sqlQuery, params = []) {
+  return new Promise((resolve, reject) => {
+    sqlDb.all(sqlQuery, params, (err, rows) => {
+      if (err !== null) {
+        reject(err);
+      } else {
+        resolve(rows);
+      }
+    })
+  });
+};
+
 createDb();
 
 module.exports = {
@@ -106,5 +142,8 @@ module.exports = {
   relationsTable,
   get,
   all,
-  run
+  run,
+  runWithParams,
+  getWithParams,
+  allWithParams
 }

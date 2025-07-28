@@ -18,14 +18,14 @@ class Freets {
      */
     static async getFreetsByUser(username, id) {
       if (id !== undefined) {
-        return db.all(`
+        return db.allWithParams(`
           SELECT * FROM freets 
-          WHERE ${db.freetsTable.author} = '${username}'
-          AND ${db.freetsTable.freetID} = '${id}' `);
+          WHERE ${db.freetsTable.author} = ?
+          AND ${db.freetsTable.freetID} = ?`, [username, id]);
       } else {
-        return db.all(`
+        return db.allWithParams(`
           SELECT * FROM freets 
-          WHERE ${db.freetsTable.author} = "${username}"`);
+          WHERE ${db.freetsTable.author} = ?`, [username]);
       } 
     };
 
@@ -34,16 +34,16 @@ class Freets {
      * @param {int} id 
      */
     static async getFreet(id) {
-      return db.get(`
+      return db.getWithParams(`
         SELECT * FROM freets 
-        WHERE ${db.freetsTable.freetID} = '${id}'`);
+        WHERE ${db.freetsTable.freetID} = ?`, [id]);
     };
 
 
     static async getAuthor(freetID) {
-      return db.get(`
+      return db.getWithParams(`
         SELECT freetAuthor from freets 
-        WHERE ${db.freetsTable.freetID} = '${freetID}'`)
+        WHERE ${db.freetsTable.freetID} = ?`, [freetID])
     }
 
     // static async getUpvotes(freetID) {
@@ -53,9 +53,9 @@ class Freets {
     // }
 
     static async getFreetContent(freetID) {
-      return db.get(`
+      return db.getWithParams(`
         SELECT freetContent from freets 
-        WHERE ${db.freetsTable.freetID} = '${freetID}'`)
+        WHERE ${db.freetsTable.freetID} = ?`, [freetID])
     }
 
     /**
@@ -67,18 +67,18 @@ class Freets {
     static async createFreet(username, freetContent) {
       console.log("INSIDE FREETS.JS")
       let new_id = uuidv4();
-      return db.run(`
+      return db.runWithParams(`
         INSERT INTO freets
-        VALUES ('${new_id}', '${username}', '${freetContent}', 0)`)
+        VALUES (?, ?, ?, 0)`, [new_id, username, freetContent])
       .then(() => {
         return Freets.getFreet(new_id);
       })
     };
 
     static async createFreetWithID(id, username, freetContent) {
-      return db.run(`
+      return db.runWithParams(`
         INSERT INTO freets
-        VALUES ('${id}', '${username}', '${freetContent}', 0)`)
+        VALUES (?, ?, ?, 0)`, [id, username, freetContent])
       .then(() => {
         return Freets.getFreet(id);
       })
@@ -91,10 +91,10 @@ class Freets {
      * @returns {Object} new Freet
      */
     static async editFreet(freetID, freetContent) {
-      return db.run(`
+      return db.runWithParams(`
         UPDATE freets
-        SET ${db.freetsTable.freetContent} = '${freetContent}'
-        WHERE ${db.freetsTable.freetID} = '${freetID}'`)
+        SET ${db.freetsTable.freetContent} = ?
+        WHERE ${db.freetsTable.freetID} = ?`, [freetContent, freetID])
       .then(() => {
         return Freets.getFreet(freetID);
       });
@@ -107,9 +107,9 @@ class Freets {
      * @returns {Array} remaining Freets
      */
     static async deleteFreet(freetID) {
-      return db.run(`
+      return db.runWithParams(`
         DELETE from freets
-        WHERE ${db.freetsTable.freetID} = '${freetID}'`);
+        WHERE ${db.freetsTable.freetID} = ?`, [freetID]);
     };
 }
 

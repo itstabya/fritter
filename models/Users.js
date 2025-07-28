@@ -8,9 +8,9 @@ const db = require('../db/db_config');
      */
 
     static async createUser(username, password) {
-      return db.run(`
+      return db.runWithParams(`
         INSERT INTO users 
-        VALUES ('${username}', '${password}')`)
+        VALUES (?, ?)`, [username, password])
       .then(() => {
         return Users.findUser(username);
       });
@@ -22,10 +22,10 @@ const db = require('../db/db_config');
      * @returns {Array} matching user 
      */
     static async findUser(username) {
-      return db.get(`
+      return db.getWithParams(`
         SELECT ${db.usersTable.username} 
         FROM users 
-        WHERE ${db.usersTable.username} = '${username}'`);
+        WHERE ${db.usersTable.username} = ?`, [username]);
     }
 
     /**
@@ -35,9 +35,9 @@ const db = require('../db/db_config');
      * @returns {Boolean}
      */
     static async authenticate(username, pw) {
-      return db.get(`
+      return db.getWithParams(`
         SELECT ${db.usersTable.pw} 
-        FROM users WHERE ${db.usersTable.username} = '${username}'`);
+        FROM users WHERE ${db.usersTable.username} = ?`, [username]);
     };
 
     /**
@@ -45,16 +45,16 @@ const db = require('../db/db_config');
      * @param {String} username 
      */
     static async deleteUser(username) {
-      return db.run(`
-        DELETE FROM users WHERE ${db.usersTable.username} = '${username}';`)
+      return db.runWithParams(`
+        DELETE FROM users WHERE ${db.usersTable.username} = ?`, [username])
         .then(() => {
-          return db.run(`DELETE FROM freets WHERE ${db.freetsTable.author} = '${username}'`)
+          return db.runWithParams(`DELETE FROM freets WHERE ${db.freetsTable.author} = ?`, [username])
         })
         .then(() => {
-          return db.run(`DELETE FROM relations WHERE ${db.relationsTable.currUser} = '${username}'`)
+          return db.runWithParams(`DELETE FROM relations WHERE ${db.relationsTable.currUser} = ?`, [username])
         })
         .then(() => {
-          return db.run(`DELETE FROM relations WHERE ${db.relationsTable.ogUser} = '${username}'`);
+          return db.runWithParams(`DELETE FROM relations WHERE ${db.relationsTable.ogUser} = ?`, [username]);
         })
     }
 
@@ -65,23 +65,23 @@ const db = require('../db/db_config');
      * @param {String} newUsername
      */
     static async updateUsername(username, newUsername) {
-      return db.run(`UPDATE users
-      SET ${db.usersTable.username} = '${newUsername}'
-      WHERE ${db.usersTable.username} = '${username}'`)
+      return db.runWithParams(`UPDATE users
+      SET ${db.usersTable.username} = ?
+      WHERE ${db.usersTable.username} = ?`, [newUsername, username])
         .then(() => {
-          return db.run(`
+          return db.runWithParams(`
           UPDATE relations
-          SET ${db.relationsTable.currUser} = '${newUsername}'
-          WHERE ${db.relationsTable.currUser} = '${username}'`)
+          SET ${db.relationsTable.currUser} = ?
+          WHERE ${db.relationsTable.currUser} = ?`, [newUsername, username])
         }).then(() => {
-          return db.run(`UPDATE freets
-          SET ${db.freetsTable.author} = '${newUsername}'
-          WHERE ${db.freetsTable.author} = '${username}'`)
+          return db.runWithParams(`UPDATE freets
+          SET ${db.freetsTable.author} = ?
+          WHERE ${db.freetsTable.author} = ?`, [newUsername, username])
         }).then(() => {
-          return db.run(`
+          return db.runWithParams(`
           UPDATE relations
-            SET ${db.relationsTable.ogUser} = '${newUsername}'
-            WHERE ${db.relationsTable.ogUser} = '${username}'`);
+            SET ${db.relationsTable.ogUser} = ?
+            WHERE ${db.relationsTable.ogUser} = ?`, [newUsername, username]);
         })
         
     }
@@ -91,10 +91,10 @@ const db = require('../db/db_config');
      * @param {String} newPassword
      */
     static async updatePassword(username, newPassword) {
-      return db.run(`
+      return db.runWithParams(`
         UPDATE users
-        SET ${db.usersTable.pw} = '${newPassword}'
-        WHERE ${db.usersTable.username} = '${username}'`);
+        SET ${db.usersTable.pw} = ?
+        WHERE ${db.usersTable.username} = ?`, [newPassword, username]);
     }
   }
 
