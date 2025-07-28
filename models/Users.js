@@ -46,7 +46,12 @@ const bcrypt = require('bcrypt');
         return false;
       }
       
-      return await bcrypt.compare(pw, user[db.usersTable.pw]);
+      const isValidPassword = await bcrypt.compare(pw, user[db.usersTable.pw]);
+      if (isValidPassword) {
+        return user; // Return user object on successful authentication
+      }
+      
+      return false; // Return false on failed authentication
     };
 
     /**

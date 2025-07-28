@@ -240,9 +240,8 @@ router.post(
       return;
     }
 
-    let password = await Users.authenticate(req.body.username, req.body.password);
-    let goodCredentials = req.body.password === password['password'];
-    if (goodCredentials) { // authenticate success, so sign user in
+    let authResult = await Users.authenticate(req.body.username, req.body.password);
+    if (authResult) { // authenticate success, so sign user in
       req.session.username = req.body.username;
       res.status(StatusCodes.OK).json({ message: 'Successfully signed in!', username: req.session.username}).end();
       return;
