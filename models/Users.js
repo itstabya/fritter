@@ -1,4 +1,5 @@
 const db = require('../db/db_config');
+const bcrypt = require('bcrypt');
 
   class Users {
     /**
@@ -8,9 +9,11 @@ const db = require('../db/db_config');
      */
 
     static async createUser(username, password) {
+      const saltRounds = 10;
+      const hashedPassword = await bcrypt.hash(password, saltRounds);
       return db.run(`
         INSERT INTO users 
-        VALUES ('${username}', '${password}')`)
+        VALUES ('${username}', '${hashedPassword}')`)
       .then(() => {
         return Users.findUser(username);
       });
@@ -35,9 +38,15 @@ const db = require('../db/db_config');
      * @returns {Boolean}
      */
     static async authenticate(username, pw) {
-      return db.get(`
+      const user = await db.get(`
         SELECT ${db.usersTable.pw} 
         FROM users WHERE ${db.usersTable.username} = '${username}'`);
+      
+      if (!user) {
+        return false;
+      }
+      
+      return await bcrypt.compare(pw, user[db.usersTable.pw]);
     };
 
     /**
@@ -91,9 +100,11 @@ const db = require('../db/db_config');
      * @param {String} newPassword
      */
     static async updatePassword(username, newPassword) {
+      const saltRounds = 10;
+      const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
       return db.run(`
         UPDATE users
-        SET ${db.usersTable.pw} = '${newPassword}'
+        SET ${db.usersTable.pw} = '${hashedPassword}'
         WHERE ${db.usersTable.username} = '${username}'`);
     }
   }
