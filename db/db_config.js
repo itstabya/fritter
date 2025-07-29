@@ -62,21 +62,21 @@ function createRelationTable() {
 }
 
 // Helper wrapper functions that return promises, resolves when SQL queries are complete
-function run(sqlQuery) {
+function run(sqlQuery, params = []) {
   return new Promise((resolve, reject) => {
-    sqlDb.run(sqlQuery, (err) => {
+    sqlDb.run(sqlQuery, params, function(err) {
       if (err !== null) {
         reject(err);
       } else {
-        resolve();
+        resolve({ lastID: this.lastID, changes: this.changes });
       }
     })
   });
 };
 
-function get(sqlQuery) {
+function get(sqlQuery, params = []) {
   return new Promise((resolve, reject) => {
-    sqlDb.get(sqlQuery, (err, row) => {
+    sqlDb.get(sqlQuery, params, (err, row) => {
       if (err !== null) {
         reject(err);
       } else {
@@ -86,9 +86,9 @@ function get(sqlQuery) {
   });
 };
 
-function all(sqlQuery) {
+function all(sqlQuery, params = []) {
   return new Promise((resolve, reject) => {
-    sqlDb.all(sqlQuery, (err, rows) => {
+    sqlDb.all(sqlQuery, params, (err, rows) => {
       if (err !== null) {
         reject(err);
       } else {
