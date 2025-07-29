@@ -20,12 +20,12 @@ class Freets {
       if (id !== undefined) {
         return db.all(`
           SELECT * FROM freets 
-          WHERE ${db.freetsTable.author} = '${username}'
-          AND ${db.freetsTable.freetID} = '${id}' `);
+          WHERE ${db.freetsTable.author} = ?
+          AND ${db.freetsTable.freetID} = ?`, [username, id]);
       } else {
         return db.all(`
           SELECT * FROM freets 
-          WHERE ${db.freetsTable.author} = "${username}"`);
+          WHERE ${db.freetsTable.author} = ?`, [username]);
       } 
     };
 
@@ -36,26 +36,21 @@ class Freets {
     static async getFreet(id) {
       return db.get(`
         SELECT * FROM freets 
-        WHERE ${db.freetsTable.freetID} = '${id}'`);
+        WHERE ${db.freetsTable.freetID} = ?`, [id]);
     };
 
 
     static async getAuthor(freetID) {
       return db.get(`
         SELECT freetAuthor from freets 
-        WHERE ${db.freetsTable.freetID} = '${freetID}'`)
+        WHERE ${db.freetsTable.freetID} = ?`, [freetID])
     }
 
-    // static async getUpvotes(freetID) {
-    //   return db.get(`
-    //     SELECT upvotes from freets 
-    //     WHERE ${db.freetsTable.freetID} = '${freetID}'`)
-    // }
 
     static async getFreetContent(freetID) {
       return db.get(`
         SELECT freetContent from freets 
-        WHERE ${db.freetsTable.freetID} = '${freetID}'`)
+        WHERE ${db.freetsTable.freetID} = ?`, [freetID])
     }
 
     /**
@@ -69,7 +64,7 @@ class Freets {
       let new_id = uuidv4();
       return db.run(`
         INSERT INTO freets
-        VALUES ('${new_id}', '${username}', '${freetContent}', 0)`)
+        VALUES (?, ?, ?, 0)`, [new_id, username, freetContent])
       .then(() => {
         return Freets.getFreet(new_id);
       })
@@ -78,7 +73,7 @@ class Freets {
     static async createFreetWithID(id, username, freetContent) {
       return db.run(`
         INSERT INTO freets
-        VALUES ('${id}', '${username}', '${freetContent}', 0)`)
+        VALUES (?, ?, ?, 0)`, [id, username, freetContent])
       .then(() => {
         return Freets.getFreet(id);
       })
@@ -93,8 +88,8 @@ class Freets {
     static async editFreet(freetID, freetContent) {
       return db.run(`
         UPDATE freets
-        SET ${db.freetsTable.freetContent} = '${freetContent}'
-        WHERE ${db.freetsTable.freetID} = '${freetID}'`)
+        SET ${db.freetsTable.freetContent} = ?
+        WHERE ${db.freetsTable.freetID} = ?`, [freetContent, freetID])
       .then(() => {
         return Freets.getFreet(freetID);
       });
@@ -109,7 +104,7 @@ class Freets {
     static async deleteFreet(freetID) {
       return db.run(`
         DELETE from freets
-        WHERE ${db.freetsTable.freetID} = '${freetID}'`);
+        WHERE ${db.freetsTable.freetID} = ?`, [freetID]);
     };
 }
 
