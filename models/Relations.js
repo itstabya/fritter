@@ -12,57 +12,60 @@ const relationType = {
 class Relations {
   static async followUser(currUser, ogUser) {
     return db.run(`INSERT INTO relations
-    VALUES ('${relationType.follow}',
-            '${currUser}',
-            '${NA_FREET}',
-            '${ogUser}',
-            '${NA_FREET}')`)
+    VALUES (?, ?, ?, ?, ?)`, [
+      relationType.follow,
+      currUser,
+      NA_FREET,
+      ogUser,
+      NA_FREET
+    ])
   };
 
   static async getFollowers(user) {
     return db.all(`
       SELECT * FROM relations
       WHERE ${db.relationsTable.relationType} = ${relationType.follow}
-      AND ${db.relationsTable.ogUser} = '${user}'`)
+      AND ${db.relationsTable.ogUser} = ?`, [user])
   };
 
   static async getFollowing(user) {
     return db.all(`
       SELECT * FROM relations
       WHERE ${db.relationsTable.relationType} = ${relationType.follow}
-      AND ${db.relationsTable.currUser} = '${user}'`)
+      AND ${db.relationsTable.currUser} = ?`, [user])
   };
 
   static async unfollowUser(currUser, ogUser) {
     return db.run(`
       DELETE FROM relations
-      WHERE ${db.relationsTable.relationType} = '${relationType.follow}'
-      AND ${db.relationsTable.ogUser} = '${ogUser}'
-      AND ${db.relationsTable.currUser} = '${currUser}'`)
+      WHERE ${db.relationsTable.relationType} = ?
+      AND ${db.relationsTable.ogUser} = ?
+      AND ${db.relationsTable.currUser} = ?`, [relationType.follow, ogUser, currUser])
   };
 
   static async following(currUser, ogUser) {
     return db.get(`
       SELECT * FROM relations
-      WHERE ${db.relationsTable.relationType} = '${relationType.follow}'
-      AND ${db.relationsTable.ogUser} = '${ogUser}'
-      AND ${db.relationsTable.currUser} = '${currUser}'`);
+      WHERE ${db.relationsTable.relationType} = ?
+      AND ${db.relationsTable.ogUser} = ?
+      AND ${db.relationsTable.currUser} = ?`, [relationType.follow, ogUser, currUser]);
   };
 
 
   static async upvoteFreet(currUser, ogUser, ogFreetID) {
     return db.run(`
     INSERT INTO relations
-      VALUES ('${relationType.upvote}',
-              '${currUser}',
-              '${NA_FREET}',
-              '${ogUser}',
-              '${ogFreetID}' )
-      `).then( () => { return db.run(`
+      VALUES (?, ?, ?, ?, ?)`, [
+        relationType.upvote,
+        currUser,
+        NA_FREET,
+        ogUser,
+        ogFreetID
+      ]).then( () => { return db.run(`
         UPDATE freets
         SET ${db.freetsTable.upvotes} = ${db.freetsTable.upvotes} + 1
-        WHERE ${db.freetsTable.freetID} = '${ogFreetID}';
-        `);
+        WHERE ${db.freetsTable.freetID} = ?;
+        `, [ogFreetID]);
       })
     };
 
@@ -70,22 +73,22 @@ class Relations {
     return db.run(`
       UPDATE freets
       SET ${db.freetsTable.upvotes} = ${db.freetsTable.upvotes} - 1
-      WHERE ${db.freetsTable.freetID} = '${ogFreetID}'`).then( () => {return db.run(`
+      WHERE ${db.freetsTable.freetID} = ?`, [ogFreetID]).then( () => {return db.run(`
         DELETE FROM relations
-        WHERE ${db.relationsTable.relationType} = '${relationType.upvote}'
-        AND ${db.relationsTable.ogUser} = '${ogUser}'
-        AND ${db.relationsTable.currUser} = '${currUser}'
-        AND ${db.relationsTable.ogFreet} = '${ogFreetID}'`)
+        WHERE ${db.relationsTable.relationType} = ?
+        AND ${db.relationsTable.ogUser} = ?
+        AND ${db.relationsTable.currUser} = ?
+        AND ${db.relationsTable.ogFreet} = ?`, [relationType.upvote, ogUser, currUser, ogFreetID])
       }) 
   };
 
   static async alreadyUpvoted(currUser, ogUser, ogFreetID) {
     return db.get(`
       SELECT * FROM relations
-      WHERE ${db.relationsTable.relationType} = '${relationType.upvote}'
-      AND ${db.relationsTable.ogUser} = '${ogUser}'
-      AND ${db.relationsTable.currUser} = '${currUser}'
-      AND ${db.relationsTable.ogFreet} = '${ogFreetID}'`);
+      WHERE ${db.relationsTable.relationType} = ?
+      AND ${db.relationsTable.ogUser} = ?
+      AND ${db.relationsTable.currUser} = ?
+      AND ${db.relationsTable.ogFreet} = ?`, [relationType.upvote, ogUser, currUser, ogFreetID]);
   };
 
   static async makeRefreetContent(ogFreetID) {
@@ -104,11 +107,13 @@ class Relations {
     let newID = uuidv4();
     return db.run(
     `INSERT INTO relations
-      VALUES ('${relationType.refreet}',
-        '${currUser}',
-        '${newID}',
-        '${ogUser}',
-        '${ogFreetID}' )`)
+      VALUES (?, ?, ?, ?, ?)`, [
+        relationType.refreet,
+        currUser,
+        newID,
+        ogUser,
+        ogFreetID
+      ])
       .then(() => {
         return Freets.createFreetWithID(newID, currUser, newContent);
       });
@@ -118,15 +123,15 @@ class Relations {
     return db.get(
       `SELECT * FROM relations
       WHERE ${db.relationsTable.relationType} = ${relationType.refreet}
-      AND ${db.relationsTable.currFreet} = '${id}'`)
+      AND ${db.relationsTable.currFreet} = ?`, [id])
   };
 
   static async checkAlreadyRefreeted(user, id) {
     return db.get(
       `SELECT * FROM relations
       WHERE ${db.relationsTable.relationType} = ${relationType.refreet}
-      AND ${db.relationsTable.ogFreet} = '${id}'
-      AND ${db.relationsTable.currUser} = '${user}'`
+      AND ${db.relationsTable.ogFreet} = ?
+      AND ${db.relationsTable.currUser} = ?`, [id, user]
     )
   }
 }
